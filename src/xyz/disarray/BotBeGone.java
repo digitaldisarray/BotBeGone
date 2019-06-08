@@ -9,7 +9,9 @@ import xyz.disarray.listeners.PlayerListener;
 
 public class BotBeGone extends JavaPlugin {
 
-	static ArrayList<PlayerObj> players = new ArrayList<>();
+	private ArrayList<PlayerObj> players = new ArrayList<>();
+	private ArrayList<String> chat = new ArrayList<>();
+	private ArrayList<String> getter = new ArrayList<>();
 
 	@Override
 	public void onEnable() {
@@ -34,15 +36,15 @@ public class BotBeGone extends JavaPlugin {
 		}
 		players.remove(i);
 	}
-	
+
 	public void getPlayer(UUID id) {
-		if(indexOfPlayer(id) == -1) {
+		if (indexOfPlayer(id) == -1) {
 			players.add(new PlayerObj(id));
 		}
-		
+
 		players.get(indexOfPlayer(id));
 	}
-	
+
 	public int indexOfPlayer(UUID id) {
 		int i = -1;
 		for (PlayerObj p : players) {
@@ -51,5 +53,15 @@ public class BotBeGone extends JavaPlugin {
 			}
 		}
 		return i;
+	}
+
+	public ArrayList<String> getRecentMessages(int ammount) {
+		getter.clear();
+		// TODO: Test that this actually works because .size returns a dif thing than
+		// length and yada yada
+		for (int i = chat.size(); i > chat.size() - ammount; i--) {
+			getter.add(chat.get(i));
+		}
+		return getter;
 	}
 }
