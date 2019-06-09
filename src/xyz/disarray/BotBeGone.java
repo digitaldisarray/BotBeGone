@@ -37,12 +37,12 @@ public class BotBeGone extends JavaPlugin {
 		players.remove(i);
 	}
 
-	public void getPlayer(UUID id) {
+	public PlayerObj getPlayer(UUID id) {
 		if (indexOfPlayer(id) == -1) {
 			players.add(new PlayerObj(id));
 		}
 
-		players.get(indexOfPlayer(id));
+		return players.get(indexOfPlayer(id));
 	}
 
 	public int indexOfPlayer(UUID id) {
@@ -57,11 +57,21 @@ public class BotBeGone extends JavaPlugin {
 
 	public ArrayList<String> getRecentMessages(int ammount) {
 		getter.clear();
-		// TODO: Test that this actually works because .size returns a dif thing than
 		// length and yada yada
-		for (int i = chat.size(); i > chat.size() - ammount; i--) {
+		String returnals = "";
+		for (int i = chat.size() - 1; i > chat.size() - 1 - ammount; i--) {
 			getter.add(chat.get(i));
+			returnals += chat.get(i) + ", ";
 		}
+//		Bukkit.broadcastMessage(ammount + "Returning: ");
 		return getter;
+	}
+	
+	public void newMessage(String message) {
+		chat.add(message);
+	}
+	
+	public ArrayList<String> getMesssages() {
+		return chat;
 	}
 }

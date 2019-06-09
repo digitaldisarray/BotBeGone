@@ -6,8 +6,9 @@ import org.bukkit.Location;
 
 public class PlayerObj {
 	private UUID id;
-	private Location oldLocation, newLocation;
-	private long lastActionTime;
+	private Location location;
+	
+	private int infractions = 0;
 	
 	public PlayerObj(UUID id) {
 		this.id = id;
@@ -15,5 +16,21 @@ public class PlayerObj {
 	
 	public UUID getID() {
 		return id;
+	}
+	
+	public Location getLocation() {
+		return location;
+	}
+	
+	public void setLocation(Location location) {
+		this.location = location;
+	}
+	
+	public int getInfractions() {
+		return infractions;
+	}
+	
+	public void addInfraction() {
+		infractions++;
 	}
 }
