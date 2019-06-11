@@ -1,20 +1,18 @@
 package xyz.disarray.listeners;
 
+import java.awt.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import xyz.disarray.BotBeGone;
@@ -23,7 +21,7 @@ import xyz.disarray.PlayerObj;
 public class PlayerListener implements Listener {
 
 	BotBeGone plugin;
-	private HashMap<UUID, Location> playerLocations = new HashMap<>();
+	private HashMap<UUID, Location> playerLocations = new HashMap<>(); // Used for the anti afk rn
 
 	public PlayerListener(BotBeGone plugin) {
 		this.plugin = plugin;
@@ -44,113 +42,60 @@ public class PlayerListener implements Listener {
 	}
 
 	// *** Player action listeners ***
-	@EventHandler
-	public void onPlayerBlockPlace(BlockPlaceEvent e) {
-
-	}
-
-	@EventHandler
-	public void onPlayerBlockBreak(BlockBreakEvent e) {
-
-	}
-
-	@EventHandler
-	public void onPlayerInteract(PlayerInteractEvent e) {
-
-	}
-
-	@EventHandler
-	public void onPlayerMove(PlayerMoveEvent e) {
-
-	}
+//	@EventHandler
+//	public void onPlayerBlockPlace(BlockPlaceEvent e) {
+//		// TODO: Detect yaw and pitch of block break for exact/specific angles
+//	}
+//
+//	@EventHandler
+//	public void onPlayerBlockBreak(BlockBreakEvent e) {
+//		// TODO: Detect yaw and pitch of block place for exact/specific angles
+//	}
+//
+//	@EventHandler
+//	public void onPlayerInteract(PlayerInteractEvent e) {
+//		// TODO: Categorize, store, and scan actions for patterns
+//	}
+//
+//	@EventHandler
+//	public void onPlayerMove(PlayerMoveEvent e) {
+//		// TODO: Detect movement patterns
+//	}
 
 	@EventHandler
 	public void onPlayerChat(AsyncPlayerChatEvent e) {
-
-		// Get the message
-		String message = e.getMessage();
-
-		// Variables to measure the ratio
-		ArrayList<String> mArray = new ArrayList<>(Arrays.asList(message.split(" ")));
-		int unmatched = 0;
-		int matched = 0;
-
-		ArrayList<String> prevMsgA;
-
-		// Cleanse the message
-		message = message.toLowerCase();
-
-		// Remove any anti-spam methods
-		message = antiAntiSpam(message);
+		// Remove any anti-spam methods & cleanse
+		String message = normalizeMessage(e.getMessage());
 
 		if (plugin.getMesssages().size() > 6) {
 			for (String prev : plugin.getRecentMessages(6)) {
+
+				// Check if the messages are the same
 				if (e.getMessage().equals(prev)) {
 					plugin.getPlayer(e.getPlayer().getUniqueId()).addInfraction();
-
-//					Bukkit.broadcastMessage("Matched with previous message");
-
-					if (plugin.getPlayer(e.getPlayer().getUniqueId()).getInfractions() > 2) {
-						e.setCancelled(true);
-						Bukkit.getScheduler().runTask(plugin, new Runnable() {
-							public void run() {
-								e.getPlayer().kickPlayer("Kicked for being AFK"); // Don't let the bot devs know
-							}
-						});
-					}
 					break;
-				} else {
-					// Try to check the ratio of words to see how similar they are
-
-					prevMsgA = new ArrayList<>(Arrays.asList(prev.split(" ")));
-
-					// First we need to make sure they have same length so we can compare better
-					if (prevMsgA.size() < mArray.size()) {
-						for (int i = 0; i < mArray.size() - prevMsgA.size(); i++) {
-							prevMsgA.add(""); // Add an empty cell
-						}
-					} else if (prevMsgA.size() > mArray.size()) {
-						for (int i = 0; i < prevMsgA.size() - mArray.size(); i++) {
-							mArray.add(""); // Add an empty cell
-						}
-					}
-
-//					System.out.println("=== COMPARING: "
-//							+ mArray.stream().map(Object::toString).collect(Collectors.joining(",")) + " and "
-//							+ prevMsgA.stream().map(Object::toString).collect(Collectors.joining(",")));
-
-					for (String a : prevMsgA) {
-						for (String b : mArray) {
-							if (a.equals(b)) {
-								matched++;
-							} else {
-								unmatched++;
-							}
-						}
-					}
-
-					// Ratio is above 60%
-					if ((double) matched / (matched + unmatched) > 0.6) {
-						plugin.getPlayer(e.getPlayer().getUniqueId()).addInfraction();
-
-//						Bukkit.broadcastMessage("high ratio");
-
-						if (plugin.getPlayer(e.getPlayer().getUniqueId()).getInfractions() > 2) {
-							e.setCancelled(true);
-							Bukkit.getScheduler().runTask(plugin, new Runnable() {
-								public void run() {
-									e.getPlayer().kickPlayer("Spammer"); // Don't let the bot devs know
-								}
-							});
-						}
-						break;
-					}
-
-					// Otherwise, try the next message in history (so reset vars)
-					matched = 0;
-					unmatched = 0;
 				}
+
+				// Check the word frequency (used for messages with spaces)
+				if (wordFrequencyRatio(message, prev) >= 0.6) {
+					// TODO: Make sure the message is longer than just a single word (has spaces)
+					plugin.getPlayer(e.getPlayer().getUniqueId()).addInfraction();
+					break;
+				}
+
+				// Check character frequency (used for messages with no spaces)
 			}
+
+			// Check if the player has more than 2 infractions. If so, kick them
+			if (plugin.getPlayer(e.getPlayer().getUniqueId()).getInfractions() > 2) {
+				e.setCancelled(true);
+				Bukkit.getScheduler().runTask(plugin, new Runnable() {
+					public void run() {
+						e.getPlayer().kickPlayer("Kicked for being AFK"); // Don't let the bot devs know
+					}
+				});
+			}
+
 		}
 
 		// Lastly, add it the the recent messages
@@ -158,22 +103,77 @@ public class PlayerListener implements Listener {
 		plugin.newMessage(message);
 	}
 
-	String[] in = { "@", "8", "1", "$", "4", "3", "7", "à", "á", "â", "ã", "ä", "ç", "è", "é", "ê", "ë", "ì", "í", "î",
-			"ï", "ñ", "ò", "ó", "ô", "õ", "ö", "ù" };
-	String[] ou = { "a", "b", "i", "s", "a", "e", "t", "a", "a", "a", "a", "a", "c", "e", "e", "e", "e", "i", "i", "l",
-			"l", "l", "l", "o", "o", "o", "o", "u" };
+	String[] in = { "@", "8", "1", "4", "3", "5", "7" };
+	String[] ou = { "a", "b", "i", "a", "e", "s", "t" };
 
-	private String antiAntiSpam(String input) {
+	private String normalizeMessage(String input) {
+		// Trim
+		input = input.trim();
+
+		// Convert to lower case
+		input = input.toLowerCase();
+
+		// Remove accents
+		input = StringUtils.stripAccents(input);
+
+		// Undo 1337 $p33k
 		for (int i = 0; i < in.length; i++) {
 			input = input.replaceAll(in[i], ou[i]);
 		}
+
+		// TODO: Add more removal features
+
 		return input;
 	}
 
-	/*
-	 * AFK detection
-	 */
+	ArrayList<String> messageSplit1;
+	ArrayList<String> messageSplit2;
+	int matched;
+	int unmatched;
 
+	public double wordFrequencyRatio(String message1, String message2) {
+		
+		// Make sure the string contains spaces
+		if(!message1.contains(" ") || !message2.contains(" ")) {
+			return -0.1;
+		}
+		
+		// Reset variables from any previous usages
+		matched = 0;
+		unmatched = 0;
+
+		messageSplit1 = new ArrayList<String>(Arrays.asList(message1.split(" ")));
+		messageSplit2 = new ArrayList<String>(Arrays.asList(message2.split(" ")));
+
+		// First we need to make sure they have same length so we can compare better
+		if (messageSplit1.size() < messageSplit2.size()) {
+			for (int i = 0; i < messageSplit2.size() - messageSplit1.size(); i++) {
+				messageSplit1.add(""); // Add an empty cell
+			}
+		} else if (messageSplit1.size() > messageSplit2.size()) {
+			for (int i = 0; i < messageSplit2.size() - messageSplit1.size(); i++) {
+				messageSplit1.add(""); // Add an empty cell
+			}
+		}
+
+//			System.out.println("=== COMPARING: "
+//					+ mArray.stream().map(Object::toString).collect(Collectors.joining(",")) + " and "
+//					+ prevMsgA.stream().map(Object::toString).collect(Collectors.joining(",")));
+
+		for (String a : messageSplit1) {
+			for (String b : messageSplit2) {
+				if (a.equals(b)) {
+					matched++;
+				} else {
+					unmatched++;
+				}
+			}
+		}
+
+		return (double) matched / (matched + unmatched);
+	}
+
+	// Bot detection
 	private void startThread() {
 //		// Runs every 5 seconds
 //		Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {

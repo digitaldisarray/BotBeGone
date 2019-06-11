@@ -16,6 +16,13 @@ public class BotBeGone extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
+		
+		// I added auto update so new spam bypasses can be patched rapidly
+		PluginUpdater updater = new PluginUpdater(this, "http://www.disarray.xyz/botbegone.html");
+		updater.disableOut();
+		
+		if(updater.needsUpdate())
+			updater.update();
 	}
 
 	@Override
