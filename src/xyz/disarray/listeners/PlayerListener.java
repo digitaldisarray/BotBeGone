@@ -1,6 +1,5 @@
 package xyz.disarray.listeners;
 
-import java.awt.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -78,12 +77,15 @@ public class PlayerListener implements Listener {
 
 				// Check the word frequency (used for messages with spaces)
 				if (wordFrequencyRatio(message, prev) >= 0.6) {
-					// TODO: Make sure the message is longer than just a single word (has spaces)
 					plugin.getPlayer(e.getPlayer().getUniqueId()).addInfraction();
 					break;
 				}
 
 				// Check character frequency (used for messages with no spaces)
+				if (characterFrequencyRatio(message, prev) >= 0.7) {
+					plugin.getPlayer(e.getPlayer().getUniqueId()).addInfraction();
+					break;
+				}
 			}
 
 			// Check if the player has more than 2 infractions. If so, kick them
@@ -132,12 +134,12 @@ public class PlayerListener implements Listener {
 	int unmatched;
 
 	public double wordFrequencyRatio(String message1, String message2) {
-		
+
 		// Make sure the string contains spaces
-		if(!message1.contains(" ") || !message2.contains(" ")) {
+		if (!message1.contains(" ") || !message2.contains(" ")) {
 			return -0.1;
 		}
-		
+
 		// Reset variables from any previous usages
 		matched = 0;
 		unmatched = 0;
@@ -162,6 +164,42 @@ public class PlayerListener implements Listener {
 
 		for (String a : messageSplit1) {
 			for (String b : messageSplit2) {
+				if (a.equals(b)) {
+					matched++;
+				} else {
+					unmatched++;
+				}
+			}
+		}
+
+		return (double) matched / (matched + unmatched);
+	}
+
+	private double characterFrequencyRatio(String message1, String message2) {
+		ArrayList<Character> characters1 = new ArrayList<>();
+		for (Character c : message1.toCharArray()) {
+			characters1.add(c);
+		}
+		ArrayList<Character> characters2 = new ArrayList<>();
+		for (Character c : message2.toCharArray()) {
+			characters2.add(c);
+		}
+
+		// Check array lengths and adjust accordingly
+		if (characters1.size() < characters2.size()) {
+			for (int i = 0; i < characters2.size() - characters1.size(); i++) {
+				// Add an accent mark character that we know will not match to anything
+				characters1.add(new Character('è'));
+			}
+		} else if (characters1.size() > characters2.size()) {
+			for (int i = 0; i < characters2.size() - characters1.size(); i++) {
+				// Add an accent mark character that we know will not match to anything
+				characters1.add(new Character('è'));
+			}
+		}
+
+		for (Character a : characters1) {
+			for (Character b : characters2) {
 				if (a.equals(b)) {
 					matched++;
 				} else {
